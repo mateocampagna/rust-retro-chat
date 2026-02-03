@@ -1,4 +1,4 @@
-# Rust Retro Chat 🦀 💬
+# Axum Retro Chat 🦀 💬
 
 > A high-performance, real-time messaging application built with **Rust** and **WebSockets**, wrapped in a nostalgic 2000s terminal aesthetic.
 
@@ -43,30 +43,6 @@
 
 ---
 
-## ⚙️ How to Run
-
-Ensure you have **Rust** and **Cargo** installed on your machine.
-
-1.  **Clone the repository**
-    ```bash
-    git clone [https://github.com/tu-usuario/axum-retro-chat.git](https://github.com/tu-usuario/axum-retro-chat.git)
-    cd axum-retro-chat
-    ```
-
-2.  **Run the server**
-    ```bash
-    cargo run
-    ```
-    *The server will compile and start listening on port 3000.*
-
-3.  **Join the chat**
-    Open your browser and navigate to:
-    `http://localhost:3000`
-
-    *Tip: Open the URL in multiple tabs (or incognito mode) to test the real-time messaging between different users.*
-
----
-
 ## 🧠 Architecture Overview
 
 The application follows a clean separation of concerns:
@@ -90,4 +66,4 @@ The application follows a clean separation of concerns:
 
 ---
 
-*Created by [Tu Nombre]*
+*Created by Mateo Campagna*
