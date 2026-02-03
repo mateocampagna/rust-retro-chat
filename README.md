@@ -1,4 +1,4 @@
-# Axum Retro Chat 🦀 💬
+# Rust Retro Chat 🦀 💬
 
 > A high-performance, real-time messaging application built with **Rust** and **WebSockets**, wrapped in a nostalgic 2000s terminal aesthetic.
 
