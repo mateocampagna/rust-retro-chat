@@ -62,7 +62,6 @@ The application follows a clean separation of concerns:
 - [x] User names & Session storage
 - [ ] Message history persistence (Database integration)
 - [ ] User authentication (Login/Password)
-- [ ] Private rooms
 
 ---
 
