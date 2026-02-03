@@ -1,0 +1,354 @@
+/* style.css - Versión Retro 2000s Verdadera */
+
+:root {
+  --color-monochromatic-1: #3c0000;
+  --color-monochromatic-2: #670010;
+  --color-monochromatic-3: #960018;
+  --color-monochromatic-4: #cb4c46;
+  --color-monochromatic-5: #ff8478;
+  --retro-gray-1: #1a1a1a;
+  --retro-gray-2: #2d2d2d;
+  --retro-gray-3: #404040;
+  --retro-gray-4: #666666;
+  --retro-gray-5: #999999;
+}
+
+/* 1. Reset básico y colores globales */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Courier New', 'Lucida Console', monospace;
+}
+
+body {
+    background: var(--retro-gray-1);
+    background-image: 
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(255, 255, 255, 0.03) 2px,
+            rgba(255, 255, 255, 0.03) 4px
+        );
+    color: #cccccc;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    image-rendering: pixelated;
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15),
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 2px
+    );
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* 2. Estilo de la Pantalla de Login */
+#login-screen {
+    background: var(--retro-gray-2);
+    padding: 2rem;
+    border: 3px solid var(--retro-gray-4);
+    border-radius: 0;
+    box-shadow: 
+        5px 5px 0px var(--retro-gray-3),
+        10px 10px 0px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    width: 400px;
+    position: relative;
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+#login-screen::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    height: 25px;
+    background: var(--color-monochromatic-3);
+    border-bottom: 3px solid var(--retro-gray-4);
+}
+
+#login-screen::after {
+    content: 'CHAT v1.0';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 25px;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    letter-spacing: 1px;
+}
+
+#login-screen h1 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--color-monochromatic-5);
+    margin-top: 1rem;
+    margin-bottom: 0;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
+}
+
+#login-screen p {
+    color: var(--retro-gray-5);
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
+#name-input {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    text-align: center;
+    background: var(--retro-gray-1);
+    color: var(--color-monochromatic-5);
+    border: 2px solid var(--retro-gray-4);
+    border-radius: 0;
+    font-family: 'Courier New', monospace;
+    transition: border-color 0.2s;
+}
+
+#name-input::placeholder {
+    color: var(--retro-gray-4);
+    text-align: center;
+}
+
+#name-input:focus {
+    border-color: var(--color-monochromatic-3);
+    background: var(--retro-gray-1);
+    outline: none;
+}
+
+#btn-login {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    font-weight: bold;
+    background: var(--retro-gray-3);
+    color: #fff;
+    border: 2px solid var(--retro-gray-4);
+    border-radius: 0;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-family: 'Courier New', monospace;
+    box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.3);
+    transition: all 0.1s;
+}
+
+#btn-login:hover {
+    background: var(--color-monochromatic-3);
+    border-color: var(--color-monochromatic-4);
+    transform: translate(1px, 1px);
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+}
+
+#btn-login:active {
+    transform: translate(3px, 3px);
+    box-shadow: none;
+}
+
+/* 3. Estilo de la Pantalla de Chat */
+#chat-screen {
+    width: 100%;
+    max-width: 650px;
+    height: 80vh;
+    background: var(--retro-gray-2);
+    border: 3px solid var(--retro-gray-4);
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 
+        8px 8px 0px var(--retro-gray-3),
+        12px 12px 0px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.chat-header {
+    background: var(--color-monochromatic-3);
+    padding: 0.5rem 1rem;
+    text-align: center;
+    border-bottom: 3px solid var(--retro-gray-4);
+    position: relative;
+    min-height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-header::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border: 2px solid var(--retro-gray-1);
+}
+
+.chat-header::after {
+    content: '';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    background: var(--retro-gray-1);
+    border: 2px solid var(--retro-gray-5);
+}
+
+.chat-header h2 {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin: 0;
+}
+
+#chat-messages {
+    list-style-type: none;
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: var(--retro-gray-1);
+    border: 2px inset var(--retro-gray-3);
+}
+
+/* Scroll personalizado */
+#chat-messages::-webkit-scrollbar {
+    width: 16px;
+}
+
+#chat-messages::-webkit-scrollbar-track {
+    background: var(--retro-gray-3);
+    border: 1px solid var(--retro-gray-4);
+}
+
+#chat-messages::-webkit-scrollbar-thumb {
+    background: var(--retro-gray-4);
+    border: 2px outset var(--retro-gray-5);
+}
+
+#chat-messages::-webkit-scrollbar-thumb:hover {
+    background: var(--retro-gray-5);
+}
+
+#chat-messages::-webkit-scrollbar-button {
+    height: 16px;
+    background: var(--retro-gray-4);
+    border: 2px outset var(--retro-gray-5);
+}
+
+#chat-messages li {
+    background: var(--retro-gray-2);
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--retro-gray-4);
+    border-radius: 0;
+    max-width: 75%;
+    word-wrap: break-word;
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+    color: #cccccc;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+/* Estilo para mensajes propios (opcional) */
+#chat-messages li.own-message {
+    background: var(--retro-gray-3);
+    align-self: flex-end;
+    border-color: var(--color-monochromatic-3);
+    color: var(--color-monochromatic-5);
+}
+
+#chat-controls {
+    display: flex;
+    padding: 0.75rem;
+    background: var(--retro-gray-2);
+    gap: 0.5rem;
+    border-top: 3px solid var(--retro-gray-4);
+}
+
+#chat-controls input {
+    flex-grow: 1;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    background: var(--retro-gray-1);
+    color: #cccccc;
+    border: 2px inset var(--retro-gray-3);
+    border-radius: 0;
+    font-family: 'Courier New', monospace;
+    transition: none;
+}
+
+#chat-controls input::placeholder {
+    color: var(--retro-gray-4);
+}
+
+#chat-controls input:focus {
+    outline: 1px dotted var(--color-monochromatic-3);
+    outline-offset: -3px;
+}
+
+#chat-controls button {
+    padding: 0.5rem 1.5rem;
+    font-size: 0.8rem;
+    font-weight: bold;
+    background: var(--retro-gray-3);
+    color: #fff;
+    border: 2px outset var(--retro-gray-4);
+    border-radius: 0;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Courier New', monospace;
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+    transition: all 0.1s;
+}
+
+#chat-controls button:hover {
+    background: var(--color-monochromatic-3);
+}
+
+#chat-controls button:active {
+    border-style: inset;
+    transform: translate(1px, 1px);
+    box-shadow: none;
+}
