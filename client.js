@@ -48,30 +48,27 @@
 // const btnEnviar = document.getElementById("btn-enviar");
 // const chatList = document.getElementById("chat-messages");
 
-// // Variable para guardar el nombre (inicia vacía)
 // let nombreUsuario = null;
 
-// // --- LÓGICA DE LOGIN ---
 // btnLogin.onclick = () => {
-//     const nombre = nameInput.value.trim(); // .trim() quita espacios vacíos al inicio/final
+//     const nombre = nameInput.value.trim(); 
 
 //     if (nombre) {
 //         nombreUsuario = nombre;
 //         // Ocultamos login, mostramos chat
-//         loginScreen.style.display = "none";     // Opción directa JS
-//         chatScreen.style.display = "flex";      // Volvemos a flex para que mantenga el diseño
-//         chatScreen.classList.remove("hidden");  // O quitamos la clase hidden
+//         loginScreen.style.display = "none";     
+//         chatScreen.style.display = "flex";      
+//         chatScreen.classList.remove("hidden"); 
 //     } else {
 //         alert("Por favor, escribe un nombre para entrar.");
 //     }
 // };
 
-// // --- LÓGICA DE ENVÍO ---
 // btnEnviar.onclick = () => {
-//     if (!nombreUsuario) return; // Seguridad extra
+//     if (!nombreUsuario) return; 
     
 //     const txt = msgInput.value;
-//     if (!txt) return; // No enviar mensajes vacíos
+//     if (!txt) return;
 
 //     const message = {
 //         name: nombreUsuario,
@@ -82,17 +79,14 @@
 //     msgInput.value = "";
 // };
 
-// // --- LÓGICA DE RECEPCIÓN ---
 // socket.onmessage = (event) => {
 //     const data = JSON.parse(event.data);
 //     const li = document.createElement("li");
     
-//     // Un toque extra: poner el nombre en negrita
 //     li.innerHTML = `<strong>${data.name}:</strong> ${data.msg}`;
     
 //     chatList.appendChild(li);
     
-//     // Auto-scroll hacia abajo cuando llega un mensaje nuevo
 //     chatList.scrollTop = chatList.scrollHeight; 
 // };
 
@@ -100,15 +94,13 @@
 
 const path = window.location.pathname;
 
-// ==========================================
-// LÓGICA DE PÁGINA 1: LOGIN ("/" o "/index.html")
-// ==========================================
+// LOGICA PAGINA LOGIN
 if (path === "/" || path === "/index.html") {
     const btnLogin = document.getElementById("btn-login");
     const nameInput = document.getElementById("name-input");
 
     if (btnLogin) {
-        // Permitir entrar con tecla Enter
+        // entrar con Enter
         nameInput.addEventListener("keypress", (e) => {
             if (e.key === "Enter") btnLogin.click();
         });
@@ -116,9 +108,7 @@ if (path === "/" || path === "/index.html") {
         btnLogin.onclick = () => {
             const nombre = nameInput.value.trim();
             if (nombre) {
-                // Guardamos el nombre en la mochila temporal
                 sessionStorage.setItem("usuario_chat", nombre);
-                // Saltamos a la pagina de chat
                 window.location.href = "/chat";
             } else {
                 alert("Please identify yourself, user.");
@@ -127,24 +117,19 @@ if (path === "/" || path === "/index.html") {
     }
 }
 
-// ==========================================
-// LÓGICA DE PÁGINA 2: CHAT ("/chat")
-// ==========================================
+// LOGICA PAGINA CHAT 
 if (path === "/chat") {
-    // 1. Verificamos si tiene permiso (nombre)
+    // verificamos si tiene nombre
     const nombreUsuario = sessionStorage.getItem("usuario_chat");
 
     if (!nombreUsuario) {
-        // Si no hay nombre, patada de vuelta al login
         window.location.href = "/";
     } else {
-        // Si hay nombre, iniciamos los motores
         iniciarChat(nombreUsuario);
     }
 }
 
 function iniciarChat(usuario) {
-    // Actualizar título
     const headerTitle = document.getElementById("welcome-msg");
     if(headerTitle) headerTitle.innerText = `USER: ${usuario}`;
 
@@ -153,7 +138,6 @@ function iniciarChat(usuario) {
     const btnEnviar = document.getElementById("btn-enviar");
     const chatList = document.getElementById("chat-messages");
 
-    // Función enviar
     const enviarMensaje = () => {
         const txt = msgInput.value;
         if (!txt) return;
@@ -165,7 +149,6 @@ function iniciarChat(usuario) {
 
     btnEnviar.onclick = enviarMensaje;
 
-    // Enviar con Enter
     msgInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter") enviarMensaje();
     });
@@ -174,9 +157,9 @@ function iniciarChat(usuario) {
         const data = JSON.parse(event.data);
         const li = document.createElement("li");
         
-        // Estilo diferente si soy yo
+        // estilo diferente si soy yo
         if (data.name === usuario) {
-            li.classList.add("own-message"); // (Necesitarás agregar esta clase en CSS si quieres)
+            li.classList.add("own-message");
         }
 
         li.innerHTML = `<strong>${data.name}:</strong> ${data.msg}`;

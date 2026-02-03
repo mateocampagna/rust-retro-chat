@@ -174,7 +174,7 @@ body::after {
     box-shadow: none;
 }
 
-/* 3. Estilo de la Pantalla de Chat */
+/* Estilo de la Pantalla de Chat */
 #chat-screen {
     width: 100%;
     max-width: 650px;
@@ -290,7 +290,7 @@ body::after {
     line-height: 1.4;
 }
 
-/* Estilo para mensajes propios (opcional) */
+/* Estilo para mensajes propios  */
 #chat-messages li.own-message {
     background: var(--retro-gray-3);
     align-self: flex-end;
