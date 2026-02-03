@@ -66,4 +66,4 @@ The application follows a clean separation of concerns:
 
 ---
 
-*Created by Mateo Campagna*
+*Created by [Tu Nombre]*
