@@ -150,20 +150,70 @@ function iniciarChat(usuario) {
     btnEnviar.onclick = enviarMensaje;
 
     msgInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") enviarMensaje();
-    });
+        // Si aprieta Enter Y NO está apretando Shift
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault(); // Evitamos que haga el salto de línea en la caja
+            enviarMensaje();
+        }
+    });;
 
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
         const li = document.createElement("li");
-        
-        // estilo diferente si soy yo
+        const timeString = data.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         if (data.name === usuario) {
-            li.classList.add("own-message");
+            li.classList.add("own-message"); 
         }
-
-        li.innerHTML = `<strong>${data.name}:</strong> ${data.msg}`;
+        // Usar parseMarkdown para procesar el contenido
+        const messageContent = parseMarkdown(data.msg);
+        li.innerHTML = `<span class="timestamp">[${timeString}]</span> <strong>${data.name}:</strong> <div class="md-content">${messageContent}</div>`;
+        
         chatList.appendChild(li);
         chatList.scrollTop = chatList.scrollHeight;
     };
+}
+
+let katexConfigured = false;
+
+function parseMarkdown(text) {
+    // Usar marked.js para parsear markdown
+    if (typeof marked !== 'undefined') {
+        
+        // Conectar KaTeX (Matemáticas) solo la primera vez
+        if (typeof markedKatex !== 'undefined' && !katexConfigured) {
+            // throwOnError: false evita que el chat se rompa si escribes mal una fórmula
+            marked.use(markedKatex({ throwOnError: false }));
+            katexConfigured = true;
+        }
+
+        const html = marked.parse(text, {
+            breaks: true,
+            gfm: true // GitHub Flavored Markdown
+        });
+        
+        // Resaltar sintaxis en bloques de código
+        if (typeof hljs !== 'undefined') {
+            const div = document.createElement('div');
+            div.innerHTML = html;
+            div.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+            return div.innerHTML;
+        }
+        
+        return html;
+    }
+    
+    // Fallback de seguridad si marked.js no está disponible
+    return escapeHtml(text)
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/\n/g, '<br>');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }

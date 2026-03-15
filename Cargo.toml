@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-axum = { version = "0.8.8", features = ["ws"]}
-futures = "0.3.31"
+axum = { version = "0.8.8", features = ["ws", "macros"]}
+futures = "0.3.32"
 serde_json = "1.0.149"
-tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread"] }
+sqlx = { version = "0.8.0", features = ["runtime-tokio", "sqlite"] }
+bcrypt = "0.19.0"

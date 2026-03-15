@@ -9,11 +9,13 @@ use axum::{
     routing::{any,get},
     http::header::CONTENT_TYPE,
 };
+use sqlx::{sqlite::SqlitePoolOptions, Pool, Sqlite, Row};
 
 #[derive(Clone)]
 struct AppState{
     // enviar mensajes a clientes
     tx:broadcast::Sender<String>,
+    db: Pool<Sqlite>,
 }
 
 async fn html_handler() -> Html<&'static str>{
@@ -34,27 +36,88 @@ async fn chat_html_handler() -> Html<&'static str>{
     Html(res)
 }
 
-async fn socket_handle(mut socket:WebSocket, state:AppState){
-    // receiver = lo que el cliente ENVIA (cliente -> servidor, browser -> a mi)
-    // sender = lo que el servidor ENVIA (servidor -> cliente, yo -> browser)
+async fn socket_handle(mut socket: WebSocket, state: AppState) {
     let (mut sender, mut receiver) = socket.split();
-    let mut rx=state.tx.subscribe();
+    match sqlx::query("SELECT name, msg, strftime('%H:%M', datetime(created_at, 'localtime')) as time FROM messages ORDER BY id DESC LIMIT 100")
+        .fetch_all(&state.db)
+        .await 
+    {
+        Ok(history) => {
+            for row in history.into_iter().rev() {
+                let name: String = row.get("name");
+                let msg: String = row.get("msg");
+                // Obtenemos la hora. Usamos try_get por si algo falla, no crashee.
+                let time: String = row.try_get("time").unwrap_or_else(|_| "".to_string());
+                
+                let msg_json = json!({
+                    "name": name,
+                    "msg": msg,
+                    "time": time // <-- Agregamos el tiempo al JSON
+                });
+                
+                let _ = sender.send(Message::Text(msg_json.to_string().into())).await;
+            }
+        }
+        Err(e) => {
+            println!("⚠️ Error al leer el historial: {}", e);
+        }
+    }
+    
+
+// if let Ok(history) = sqlx::query("SELECT name, msg, strftime('%H:%M', datetime(created_at, 'localtime')) as time FROM messages ORDER BY id DESC LIMIT 100")
+//     .fetch_all(&state.db)
+//     .await 
+// {
+//     for row in history.into_iter().rev() {
+//         let name: String = row.get("name");
+//         let msg: String = row.get("msg");
+//         // Obtenemos la hora. Usamos try_get por si algo falla, no crashee.
+//         let time: String = row.try_get("time").unwrap_or_else(|_| "".to_string());
+        
+//         let msg_json = json!({
+//             "name": name,
+//             "msg": msg,
+//             "time": time // <-- Agregamos el tiempo al JSON
+//         });
+        
+//         let _ = sender.send(Message::Text(msg_json.to_string().into())).await;
+//     }
+// }
+
+    let mut rx = state.tx.subscribe();
+
     loop {
         tokio::select! {
-            // op 1: yo (servidor) espero recibir un mensaje del cliente
             Some(Ok(msg)) = receiver.next() => {
-                if let Ok(message) = msg.to_text(){
-                    let _ = state.tx.send(message.to_string());
+                if let Ok(msg_text) = msg.to_text() {
+                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(msg_text) {
+                        if let (Some(name), Some(text)) = (parsed["name"].as_str(), parsed["msg"].as_str()) {
+                            
+                            let _ = sqlx::query("INSERT INTO messages (name, msg) VALUES (?, ?)")
+                                .bind(name)
+                                .bind(text)
+                                .execute(&state.db)
+                                .await;
+
+                            let _ = sqlx::query(
+                                "DELETE FROM messages WHERE id NOT IN (
+                                    SELECT id FROM messages ORDER BY id DESC LIMIT 100
+                                )"
+                            )
+                            .execute(&state.db)
+                            .await;
+                        }
+                    }
+
+                    let _ = state.tx.send(msg_text.to_string());
                 }
             }   
-            // op 2: yo (servidor) le envio mensajes al cliente
             Ok(msg) = rx.recv() => {
-                if sender.send( Message::Text(msg.into())).await.is_err(){
+                if sender.send(Message::Text(msg.into())).await.is_err() {
                     break;
                 }
             }
             else => break,
-
         }
     }
 }
@@ -65,8 +128,24 @@ async fn ws_handler(ws:WebSocketUpgrade, State(state): State<AppState>) -> Respo
 
 #[tokio::main]
 async fn main() {
+    let db = SqlitePoolOptions::new()
+        .max_connections(5).connect("sqlite://chat.db?mode=rwc")
+        .await
+        .expect("No se pudo conectar a SQLite");
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            msg TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )"
+    )
+    .execute(&db)
+    .await
+    .expect("Fallo al crear la tabla");
+
     let (tx, _rx) = broadcast::channel(100);
-    let app_state=AppState{tx};
+    let app_state=AppState{tx, db};
     let app = Router::new()
         .route("/", get(html_handler))
         .route("/chat", get(chat_html_handler))

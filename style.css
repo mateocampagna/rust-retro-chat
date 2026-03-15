@@ -176,9 +176,9 @@ body::after {
 
 /* Estilo de la Pantalla de Chat */
 #chat-screen {
-    width: 100%;
-    max-width: 650px;
-    height: 80vh;
+    width: 60%;              /* Que ocupe casi todo el ancho disponible... */
+    max-width: 1200px;       /* ...pero que tope en 1200px para pantallas ultra anchas */
+    height: 90vh;            /* Un poco más alto (90% del alto de la pantalla en vez de 80%) */
     background: var(--retro-gray-2);
     border: 3px solid var(--retro-gray-4);
     border-radius: 0;
@@ -306,7 +306,7 @@ body::after {
     border-top: 3px solid var(--retro-gray-4);
 }
 
-#chat-controls input {
+#chat-controls textarea {
     flex-grow: 1;
     padding: 0.5rem 0.75rem;
     font-size: 0.85rem;
@@ -315,14 +315,12 @@ body::after {
     border: 2px inset var(--retro-gray-3);
     border-radius: 0;
     font-family: 'Courier New', monospace;
-    transition: none;
+    resize: none; /* Evita que el usuario agrande la caja manualmente */
+    overflow-y: auto;
+    height: 40px; /* Altura fija inicial */
 }
 
-#chat-controls input::placeholder {
-    color: var(--retro-gray-4);
-}
-
-#chat-controls input:focus {
+#chat-controls textarea:focus {
     outline: 1px dotted var(--color-monochromatic-3);
     outline-offset: -3px;
 }
@@ -352,3 +350,218 @@ body::after {
     transform: translate(1px, 1px);
     box-shadow: none;
 }
+
+/* Estilo para la marca de tiempo */
+.timestamp {
+    color: var(--retro-gray-5); /* Un gris apagado */
+    font-size: 0.8rem;
+    margin-right: 8px;
+    letter-spacing: 1px;
+}
+
+/* Opcional: Si el mensaje es tuyo, que la hora se vea un poco diferente */
+li.own-message .timestamp {
+    color: var(--retro-gray-4);
+}
+
+/* ============ ESTILOS PARA MARKDOWN ============ */
+
+/* Párrafos */
+#chat-messages p {
+    margin: 0.25rem 0;
+    line-height: 1.4;
+}
+
+/* Encabezados */
+#chat-messages h1,
+#chat-messages h2,
+#chat-messages h3,
+#chat-messages h4,
+#chat-messages h5,
+#chat-messages h6 {
+    color: var(--color-monochromatic-5);
+    font-weight: bold;
+    margin: 0.5rem 0 0.25rem 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#chat-messages h1 { font-size: 1.2rem; }
+#chat-messages h2 { font-size: 1.1rem; }
+#chat-messages h3 { font-size: 1rem; }
+#chat-messages h4,
+#chat-messages h5,
+#chat-messages h6 { font-size: 0.95rem; }
+
+/* Código inline */
+#chat-messages code {
+    background: var(--retro-gray-3);
+    color: var(--color-monochromatic-5);
+    padding: 0.2rem 0.4rem;
+    border-radius: 2px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    border: 1px solid var(--retro-gray-4);
+}
+
+/* Bloques de código */
+#chat-messages pre {
+    background: var(--retro-gray-1);
+    color: #00ff00;
+    padding: 1rem;
+    border: 2px solid var(--retro-gray-4);
+    border-radius: 2px;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+#chat-messages pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    border: none;
+    display: block;
+}
+
+/* Listas */
+#chat-messages ul,
+#chat-messages ol {
+    margin: 0.5rem 0 0.5rem 1.5rem;
+    line-height: 1.6;
+}
+
+#chat-messages li {
+    background: var(--retro-gray-2);
+    margin: 0.25rem 0;
+}
+#chat-messages > li {
+    background: var(--retro-gray-2);
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--retro-gray-4);
+    border-radius: 0;
+    max-width: 600px;
+    word-wrap: break-word;
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+    color: #cccccc;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+#chat-messages > li.own-message {
+    background: var(--retro-gray-3);
+    align-self: flex-end;
+    border-color: var(--color-monochromatic-3);
+    color: var(--color-monochromatic-5);
+}
+#chat-messages > li ul,
+#chat-messages > li ol {
+    margin: 0.5rem 0 0.5rem 2rem; /* Sangría a la izquierda */
+    line-height: 1.6;
+    list-style-position: outside;
+}
+
+#chat-messages > li ul { list-style-type: square; /* Viñetas cuadradas retro */ }
+#chat-messages > li ol { list-style-type: decimal; }
+
+#chat-messages > li li {
+    /* Quitamos los estilos de burbuja para estos elementos internos */
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0.2rem 0;
+    max-width: 100%;
+    box-shadow: none;
+    color: inherit;
+}
+/* Enlaces */
+#chat-messages a {
+    color: var(--color-monochromatic-5);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+#chat-messages a:hover {
+    background: var(--color-monochromatic-3);
+    color: #fff;
+}
+
+/* Citas */
+#chat-messages blockquote {
+    border-left: 3px solid var(--color-monochromatic-3);
+    padding-left: 1rem;
+    margin: 0.5rem 0;
+    color: var(--retro-gray-4);
+    font-style: italic;
+}
+
+/* Énfasis (cursiva) */
+#chat-messages em {
+    color: var(--color-monochromatic-5);
+    font-style: italic;
+}
+
+/* Fuerte (negrita) */
+#chat-messages strong {
+    color: var(--color-monochromatic-5);
+    font-weight: bold;
+}
+
+/* Tablas */
+#chat-messages table {
+    border-collapse: collapse;
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+#chat-messages th,
+#chat-messages td {
+    border: 1px solid var(--retro-gray-4);
+    padding: 0.5rem;
+    text-align: left;
+}
+
+#chat-messages th {
+    background: var(--retro-gray-3);
+    color: var(--color-monochromatic-5);
+    font-weight: bold;
+}
+
+/* Highlight.js - Resaltado de sintaxis */
+.hljs {
+    background: var(--retro-gray-1) !important;
+    color: #00ff00 !important;
+}
+
+.md-content {
+    display: inline; /* Hace que el primer párrafo se pegue al nombre */
+}
+.md-content p:first-child {
+    display: inline; 
+    margin-top: 0;
+}
+
+.katex {
+    color: var(--color-monochromatic-5); /* El tono rojizo de tu paleta */
+    text-shadow: 1px 1px 0px rgba(0,0,0,0.5);
+    font-size: 1.1em;
+}
+
+/* Fórmulas en bloque (centradas) */
+.katex-display {
+    background: var(--retro-gray-1);
+    border: 1px inset var(--retro-gray-3);
+    padding: 10px;
+    overflow-x: auto;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+}
+
+.hljs-string { color: #ffff00; }
+.hljs-number { color: #ff00ff; }
+.hljs-literal { color: #ff00ff; }
+.hljs-attr { color: #00ffff; }
+.hljs-keyword { color: #ff0000; font-weight: bold; }
+.hljs-function { color: #ffff00; }
+.hljs-comment { color: #888888; font-style: italic; }
