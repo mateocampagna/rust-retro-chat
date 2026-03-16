@@ -82,7 +82,7 @@ src/
 - [x] Markdown, Code & LaTeX Support
 - [x] User color identity
 - [x] Modular codebase
-- [ ] User authentication (Login/Password with `bcrypt`)
+- [x] User authentication (Login/Password with `bcrypt`)
 - [ ] Anti-spam system (Rate Limiting)
 - [ ] Online users list
 
