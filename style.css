@@ -13,6 +13,28 @@
   --retro-gray-5: #999999;
 }
 
+#error-msg {
+    display: none;
+    width: 100%;
+    background: #2b0000;
+    color: #ff0000;
+    border: 1px solid #ff0000;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.5rem;
+    box-shadow: inset 0 0 5px rgba(255, 0, 0, 0.3);
+    animation: error-blink 0.15s 3; /* Hace que titile 3 veces rápido al aparecer */
+}
+
+@keyframes error-blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
 /* 1. Reset básico y colores globales */
 * {
     box-sizing: border-box;
@@ -57,12 +79,28 @@ body::after {
     gap: 1.5rem;
 }
 
+/* LA MAGIA OCURRE AQUÍ: La franja roja con el texto inyectado */
 #login-screen::before {
-    content: '';
+    content: 'CHAT v1.0'; 
+    
+    /* Estructura de la franja */
     position: absolute;
-    top: -3px; left: -3px; right: -3px; height: 25px;
+    top: -3px; 
+    left: -3px; 
+    right: -3px; 
+    height: 25px;
     background: var(--color-monochromatic-3);
     border-bottom: 3px solid var(--retro-gray-4);
+    
+    /* Estilos del texto */
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    color: #fff;
+    font-size: 0.75rem;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    letter-spacing: 1px;
 }
 
 #login-screen h1 {
@@ -74,16 +112,31 @@ body::after {
     text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
 }
 
-#name-input {
+
+#name-input, #password-input {
     width: 100%;
     padding: 0.75rem;
     background: var(--retro-gray-1);
     color: var(--color-monochromatic-5);
     border: 2px solid var(--retro-gray-4);
+    text-align: left;
+    margin-bottom: 0.5rem;
 }
 
-#btn-login {
+#name-input:focus, #password-input:focus {
+    border-color: var(--color-monochromatic-3);
+    outline: none;
+}
+
+/* Contenedor de botones (Lado a lado) */
+#auth-buttons {
+    display: flex;
+    gap: 1rem;
     width: 100%;
+}
+
+#btn-login, #btn-register {
+    flex: 1; /* Para que ocupen exactamente la mitad cada uno */
     padding: 0.75rem;
     background: var(--retro-gray-3);
     color: #fff;
@@ -91,9 +144,11 @@ body::after {
     cursor: pointer;
     text-transform: uppercase;
     letter-spacing: 2px;
+    font-weight: bold;
 }
 
 #btn-login:hover { background: var(--color-monochromatic-3); }
+#btn-register:hover { background: var(--retro-gray-4); } 
 
 /* 3. Pantalla de Chat */
 #chat-screen {

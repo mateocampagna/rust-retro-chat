@@ -8,24 +8,20 @@
 </head>
 <body>
 
-
     <div id="login-screen"> 
         <h1>Welcome to the jungle</h1>
-        <input type="text" id="name-input" placeholder="name">
-        <button id="btn-login">Connect</button>
-
-    </div>
-
-
-
-    <!-- <div id="chat-screen" style="display: none;">
-        <ul id="chat-messages"></ul>
+        <p>IDENTIFICATION REQUIRED</p>
         
-        <div id="chat-controls">
-            <input id="msj" type="text" required size="20" placeholder="Write a message..." />
-            <button id="btn-enviar">Send</button>
+        <div id="error-msg"></div>
+        
+        <input id="name-input" type="text" required placeholder="USERNAME" autocomplete="off"/>
+        <input id="password-input" type="password" required placeholder="PASSWORD" autocomplete="off"/>
+        
+        <div id="auth-buttons">
+            <button id="btn-login">LOGIN</button>
+            <button id="btn-register">REGISTER</button>
         </div>
-    </div> -->
+    </div>
 
     <script src="/client.js"></script>
 </body>

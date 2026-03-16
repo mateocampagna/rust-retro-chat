@@ -1,7 +1,7 @@
 mod state;    
 mod handlers; 
 
-use axum::{routing::{any, get}, Router};
+use axum::{routing::{any, get, post}, Router};
 use sqlx::sqlite::SqlitePoolOptions;
 use tokio::sync::broadcast;
 use crate::state::AppState;
@@ -42,6 +42,8 @@ async fn main() {
         .route("/style.css", get(handlers::css_handler))
         .route("/client.js", get(handlers::js_handler))
         .route("/ws", any(handlers::ws_handler))
+        .route("/register", post(handlers::register_handler))
+        .route("/login", post(handlers::login_handler))
         .with_state(app_state);
 
     // 4. Iniciar Servidor

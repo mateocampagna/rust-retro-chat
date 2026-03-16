@@ -1,25 +1,96 @@
 const path = window.location.pathname;
 
 // LOGICA PAGINA LOGIN
+// LOGICA PAGINA LOGIN
 if (path === "/" || path === "/index.html") {
     const btnLogin = document.getElementById("btn-login");
+    const btnRegister = document.getElementById("btn-register");
     const nameInput = document.getElementById("name-input");
+    const passwordInput = document.getElementById("password-input");
+    const errorMsg = document.getElementById("error-msg");
+    
+    // Función ROBUSTA para mostrar errores en la UI
+    const showError = (text) => {
+        errorMsg.innerText = text;
+        errorMsg.style.display = "block"; // Forzamos a que se muestre, anulando el CSS inicial
+        
+        // Ocultar el error cuando el usuario vuelva a escribir
+        const hideError = () => {
+            errorMsg.style.display = "none"; // Lo volvemos a ocultar
+            nameInput.removeEventListener("input", hideError);
+            passwordInput.removeEventListener("input", hideError);
+        };
+        nameInput.addEventListener("input", hideError);
+        passwordInput.addEventListener("input", hideError);
+    };
 
-    if (btnLogin) {
-        // entrar con Enter
-        nameInput.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") btnLogin.click();
+    async function authenticate(endpoint) {
+        const username = nameInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        if (!username || !password) {
+            showError("[!] INCOMPLETE CREDENTIALS");
+            return;
+        }
+
+        try {
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            });
+
+            const textData = await response.text();
+            let data;
+            try {
+                data = JSON.parse(textData);
+            } catch (e) {
+                showError(`[FATAL] SERVER SAID: ${textData.substring(0, 30)}...`);
+                return;
+            }
+
+            if (response.ok) {
+                // FIX 1: Si fue un Registro, NO redirigimos. Avisamos que fue exitoso.
+                if (endpoint === "/register") {
+                    showError("[✓] REGISTERED SUCCESSFULLY. PLEASE LOGIN.");
+                    errorMsg.style.color = "#50fa7b"; // Color Verde
+                    errorMsg.style.borderColor = "#50fa7b";
+                    passwordInput.value = ""; // Limpiamos la clave
+                    return; // ¡Cortamos la función acá!
+                }
+
+                // FIX 2: Si fue Login, guardamos Token y ahí sí redirigimos
+                const username_lower = username.toLowerCase();
+                sessionStorage.setItem("usuario_chat", username_lower);
+                
+                if (data.token) {
+                    sessionStorage.setItem("jwt_token", data.token);
+                }
+
+                window.location.href = "/chat";
+            } 
+            else {
+                // Restauramos el color rojo por si venía de un registro exitoso previo
+                errorMsg.style.color = "#ff0000";
+                errorMsg.style.borderColor = "#ff0000";
+                
+                showError(`[ACCESS DENIED] ${data.message}`);
+                passwordInput.value = ""; // Limpiamos la clave
+                passwordInput.focus();
+            }
+        } catch (error) {
+            showError("[FATAL] CONNECTION TO MAINFRAME LOST");
+        }
+    }
+
+    // Encendido de botones
+    if (btnLogin && btnRegister) {
+        passwordInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") authenticate("/login");
         });
 
-        btnLogin.onclick = () => {
-            const nombre = nameInput.value.trim();
-            if (nombre) {
-                sessionStorage.setItem("usuario_chat", nombre);
-                window.location.href = "/chat";
-            } else {
-                alert("Please identify yourself, user.");
-            }
-        };
+        btnLogin.onclick = () => authenticate("/login");
+        btnRegister.onclick = () => authenticate("/register");
     }
 }
 
@@ -39,6 +110,8 @@ function iniciarChat(usuario) {
     const headerTitle = document.getElementById("welcome-msg");
     if(headerTitle) headerTitle.innerText = `USER: ${usuario}`;
 
+    
+
     let userColorClass = sessionStorage.getItem("user_color_class");
     if (!userColorClass) {
         const randomNum = Math.floor(Math.random() * 8) + 1;
@@ -46,8 +119,15 @@ function iniciarChat(usuario) {
         sessionStorage.setItem("user_color_class", userColorClass);
     }
 
+    const jwtToken = sessionStorage.getItem("jwt_token");
 
-    const socket = new WebSocket("ws://localhost:3000/ws");
+    if (!jwtToken) {
+        window.location.href = "/";
+        return;
+    }
+
+    // Le pegamos el token a la URL del WebSocket
+    const socket = new WebSocket(`ws://localhost:3000/ws?token=${jwtToken}`);
     const msgInput = document.getElementById("msj");
     const btnEnviar = document.getElementById("btn-enviar");
     const chatList = document.getElementById("chat-messages");
