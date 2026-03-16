@@ -1,14 +1,12 @@
 # Rust Retro Chat 🦀 💬
 
-> A high-performance, real-time messaging application built with **Rust** and **WebSockets**, wrapped in a nostalgic 2000s terminal aesthetic.
+A high-performance, real-time messaging Web-Chat built with Rust and WebSockets.
 
-![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=for-the-badge&logo=rust&logoColor=white)
-![Axum](https://img.shields.io/badge/axum-backend-blue?style=for-the-badge)
-![Tokio](https://img.shields.io/badge/tokio-concurrency-green?style=for-the-badge)
+---
 
-## 📸 Screenshots
+## 📸 Preview
 
-### The Login Terminal
+### The Login Terminal  
 *Minimalist entry point with focus-centered design.*
 ![Login Screen](./assets/login-preview.png)
 
@@ -16,42 +14,63 @@
 *Real-time communication with distinct visual feedback for user messages.*
 ![Chat Screen](./assets/chat-preview.png)
 
+
 ---
 
 ## 🚀 Key Features
 
-* **Real-Time Communication:** Instant messaging powered by WebSockets.
-* **High Performance:** Built on Rust's `Axum` framework and `Tokio` runtime for handling massive concurrency with low footprint.
-* **Broadcasting System:** Uses `tokio::sync::broadcast` to handle multi-user message distribution efficiently.
-* **Retro UI/UX:** Custom CSS implementation inspired by CRT monitors and 2000s interfaces (Monochromatic palette, pixelated fonts).
-* **Session Handling:** Lightweight session management using browser storage for seamless navigation between Login and Chat views.
+- **Real-Time Communication:** Instant messaging powered by WebSockets.
+- **Persistent History:** Database integration using SQLite with `SQLx` for asynchronous queries.
+- **Rich Content Rendering:**
+  - **Markdown Support:** Full GFM (GitHub Flavored Markdown) support via `Marked.js`.
+  - **Syntax Highlighting:** Real-time code highlighting for multiple languages (C++, Rust, JS) using `Highlight.js`.
+  - **Scientific Math:** LaTeX rendering for complex equations via `KaTeX`.
+- **Visual Identity:** Dynamic, session-persistent user colors (WhatsApp-style) to distinguish participants in the terminal.
+- **High Performance:** Modular architecture built on `Axum` and `Tokio` for low-latency broadcasting.
+- **Retro UI/UX:** CRT scanlines, monochromatic palettes, and pixel-perfect terminal design.
 
 ---
 
 ## 🛠️ Tech Stack
 
 ### Backend (The Powerhouse)
-* **Language:** Rust 🦀
-* **Framework:** [Axum](https://github.com/tokio-rs/axum) (Ergonomic and modular web framework)
-* **Async Runtime:** [Tokio](https://tokio.rs/)
-* **Serialization:** Serde & Serde JSON
+
+| Component | Technology |
+|---|---|
+| Language | Rust 🦀 |
+| Framework | Axum |
+| Database | SQLite + SQLx (Asynchronous SQL) |
+| Async Runtime | Tokio |
+| Serialization | Serde & Serde JSON |
 
 ### Frontend (The Look)
-* **Structure:** HTML5 (Semantic)
-* **Styling:** CSS3 (Variables, Flexbox, Custom scrollbars) - *No frameworks, pure CSS.*
-* **Logic:** Vanilla JavaScript (WebSocket API, DOM Manipulation).
+
+| Component | Technology |
+|---|---|
+| Logic | Vanilla JavaScript + WebSocket API |
+| Markdown/Math | Marked.js, Highlight.js & KaTeX |
+| Styling | Pure CSS3 (Variables, Flexbox, Custom scrollbars) |
 
 ---
 
-## 🧠 Architecture Overview
+## 📦 Project Structure (Modular)
 
-The application follows a clean separation of concerns:
+El proyecto ha evolucionado hacia una estructura modular para facilitar la escalabilidad:
 
-1.  **Routing:** Axum serves static files (`index.html`, `chat.html`, `style.css`) via specific handlers, mimicking a Multi-Page Application (MPA) feel.
-2.  **State Management:** A shared `AppState` struct holds the `broadcast::Sender`, allowing the state to be injected safely across threads using `Arc` (Atomic Reference Counting) internally handled by Axum.
-3.  **WebSocket Loop:** Each connection spawns a lightweight Tokio task that splits the socket into a `Sender` and `Receiver`:
-    * **Receiver:** Listens for incoming JSON from the client and broadcasts it to the channel.
-    * **Sender:** Subscribes to the global channel and pushes messages down to the client.
+```
+src/
+├── main.rs      # Entry point: Server config, DB init & Routing.
+├── state.rs     # Shared AppState (Broadcast channel & DB Pool).
+└── handlers.rs  # Business logic: Static file serving & WebSocket loop.
+```
+
+---
+
+## 🧠 Architecture Highlights
+
+1. **Database Persistence:** Los mensajes se guardan en tiempo real en una base de datos SQLite. Al conectarse, el servidor recupera automáticamente los últimos 100 mensajes del historial.
+2. **State Management:** Uso de `tokio::sync::broadcast` para una distribución de mensajes eficiente de uno a muchos (one-to-many).
+3. **Client-Side Rendering:** El servidor transmite texto plano de alto rendimiento; la seguridad (XSS protection) y el renderizado complejo (Markdown/LaTeX) se procesan en el cliente.
 
 ---
 
@@ -59,10 +78,18 @@ The application follows a clean separation of concerns:
 
 - [x] Basic Websocket implementation
 - [x] Custom Retro Styling
-- [x] User names & Session storage
-- [ ] Message history persistence (Database integration)
-- [ ] User authentication (Login/Password)
+- [x] Message history persistence (SQLite)
+- [x] Markdown, Code & LaTeX Support
+- [x] User color identity
+- [x] Modular codebase
+- [ ] User authentication (Login/Password with `bcrypt`)
+- [ ] Anti-spam system (Rate Limiting)
+- [ ] Online users list
 
 ---
+ 
+> ⚠️ **Disclaimer:** This project was developed for learning purposes. Its goal is to explore the Rust ecosystem, WebSockets, and real-time application architectures.
+ 
+---
 
-*Created by [Tu Nombre]*
+*Created by itsmateh*

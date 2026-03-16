@@ -57,8 +57,10 @@ async fn socket_handle(socket: WebSocket, state: AppState) {
     // 2. Loop de mensajes
     loop {
         tokio::select! {
+            // En src/handlers.rs dentro del loop:
             Some(Ok(msg)) = receiver.next() => {
                 if let Ok(msg_text) = msg.to_text() {
+                    // Guardamos en la DB (acá seguimos guardando solo nombre y msj)
                     if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(msg_text) {
                         if let (Some(name), Some(text)) = (parsed["name"].as_str(), parsed["msg"].as_str()) {
                             let _ = sqlx::query("INSERT INTO messages (name, msg) VALUES (?, ?)")
@@ -68,6 +70,7 @@ async fn socket_handle(socket: WebSocket, state: AppState) {
                                 .await;
                         }
                     }
+                    // RETRANSMITIMOS TODO: Esto incluye el campo "color" que viene del JS
                     let _ = state.tx.send(msg_text.to_string());
                 }
             }   

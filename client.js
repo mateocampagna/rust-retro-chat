@@ -1,97 +1,3 @@
-
-// const socket = new WebSocket("ws://localhost:3000/ws");
-// const input = document.getElementById("msj");
-// const button = document.getElementById("btn-enviar");
-// let nombreUsuario=prompt("nombre: ")
-
-// button.onclick = function() {
-//     const txt=input.value;
-//     const message={
-//         name:nombreUsuario,
-//         msg:txt
-//     };
-//     socket.send(JSON.stringify(message));
-//     console.log("Sent Message!");
-//     input.value=""; // limpio el input
-// }
-
-
-// socket.onmessage = function(event){
-//     // localizo el tablero
-//     const list=document.getElementById("chat-messages");
-//     // de json a js object
-//     const data=JSON.parse(event.data);
-//     // creamos el mensaje
-//     const newMessage=document.createElement("li");
-//     // ecribir lo que llego del servidor 
-//     newMessage.textContent=data.name + ": " + data.msg;
-//     // pegamos el mensaje en el tablero
-//     list.appendChild(newMessage);
-// }
-
-
-
-
-
-// client.js
-
-// const socket = new WebSocket("ws://localhost:3000/ws");
-
-// // Elementos del DOM
-// const loginScreen = document.getElementById("login-screen");
-// const chatScreen = document.getElementById("chat-screen");
-
-// const nameInput = document.getElementById("name-input");
-// const btnLogin = document.getElementById("btn-login");
-
-// const msgInput = document.getElementById("msj");
-// const btnEnviar = document.getElementById("btn-enviar");
-// const chatList = document.getElementById("chat-messages");
-
-// let nombreUsuario = null;
-
-// btnLogin.onclick = () => {
-//     const nombre = nameInput.value.trim(); 
-
-//     if (nombre) {
-//         nombreUsuario = nombre;
-//         // Ocultamos login, mostramos chat
-//         loginScreen.style.display = "none";     
-//         chatScreen.style.display = "flex";      
-//         chatScreen.classList.remove("hidden"); 
-//     } else {
-//         alert("Por favor, escribe un nombre para entrar.");
-//     }
-// };
-
-// btnEnviar.onclick = () => {
-//     if (!nombreUsuario) return; 
-    
-//     const txt = msgInput.value;
-//     if (!txt) return;
-
-//     const message = {
-//         name: nombreUsuario,
-//         msg: txt
-//     };
-
-//     socket.send(JSON.stringify(message));
-//     msgInput.value = "";
-// };
-
-// socket.onmessage = (event) => {
-//     const data = JSON.parse(event.data);
-//     const li = document.createElement("li");
-    
-//     li.innerHTML = `<strong>${data.name}:</strong> ${data.msg}`;
-    
-//     chatList.appendChild(li);
-    
-//     chatList.scrollTop = chatList.scrollHeight; 
-// };
-
-
-
 const path = window.location.pathname;
 
 // LOGICA PAGINA LOGIN
@@ -133,6 +39,14 @@ function iniciarChat(usuario) {
     const headerTitle = document.getElementById("welcome-msg");
     if(headerTitle) headerTitle.innerText = `USER: ${usuario}`;
 
+    let userColorClass = sessionStorage.getItem("user_color_class");
+    if (!userColorClass) {
+        const randomNum = Math.floor(Math.random() * 8) + 1;
+        userColorClass = `user-color-${randomNum}`;
+        sessionStorage.setItem("user_color_class", userColorClass);
+    }
+
+
     const socket = new WebSocket("ws://localhost:3000/ws");
     const msgInput = document.getElementById("msj");
     const btnEnviar = document.getElementById("btn-enviar");
@@ -142,7 +56,12 @@ function iniciarChat(usuario) {
         const txt = msgInput.value;
         if (!txt) return;
 
-        const message = { name: usuario, msg: txt };
+        const message = { 
+            name: usuario, 
+            msg: txt,
+            color: userColorClass
+        };
+
         socket.send(JSON.stringify(message));
         msgInput.value = "";
     };
@@ -161,13 +80,14 @@ function iniciarChat(usuario) {
         const data = JSON.parse(event.data);
         const li = document.createElement("li");
         const timeString = data.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
         if (data.name === usuario) {
             li.classList.add("own-message"); 
         }
         // Usar parseMarkdown para procesar el contenido
         const messageContent = parseMarkdown(data.msg);
-        li.innerHTML = `<span class="timestamp">[${timeString}]</span> <strong>${data.name}:</strong> <div class="md-content">${messageContent}</div>`;
-        
+        const colorClass = data.color || 'user-color-2';
+        li.innerHTML = `<span class="timestamp">[${timeString}]</span> <strong class="${colorClass}">${data.name}:</strong> <div class="md-content">${messageContent}</div>`;        
         chatList.appendChild(li);
         chatList.scrollTop = chatList.scrollHeight;
     };
