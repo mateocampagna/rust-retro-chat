@@ -5,4 +5,5 @@ use sqlx::{Pool, Sqlite};
 pub struct AppState{
     pub tx : broadcast::Sender<String>,
     pub db : Pool<Sqlite>,
+    pub jwt_secret:String,
 }

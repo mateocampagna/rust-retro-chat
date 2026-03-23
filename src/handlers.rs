@@ -10,12 +10,18 @@ use sqlx::Row;
 use serde::{Deserialize, Serialize};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use crate::state::AppState; 
-use jsonwebtoken::{encode, Header, EncodingKey};
+use jsonwebtoken::{encode, decode, Header, EncodingKey, DecodingKey, Validation};
 use chrono::{Utc, Duration};
 use axum::extract::Query;
-use jsonwebtoken::{decode, Validation, DecodingKey};
+use tracing::{info, warn, error};
 
-// handlers de archivos estaticos
+// constantes 
+const HISTORY_LIMIT: i64 = 100;
+const JWT_EXPIRATION_HOURS: i64 = 24;
+const MAX_MESSAGE_LENGTH: usize = 4096;
+const USER_COLOR_COUNT: u32 = 8;
+
+// handlers archivos estaticos 
 pub async fn html_handler() -> Html<&'static str> {
     Html(include_str!("../index.html"))
 }
@@ -33,44 +39,45 @@ pub async fn chat_html_handler() -> Html<&'static str> {
     Html(include_str!("../chat.html"))
 }
 
-// handler de WebSocket
+// WebSocket 
 pub async fn ws_handler(
     ws: WebSocketUpgrade, 
     State(state): State<AppState>,
-    Query(query): Query<WsQuery>, // Exigimos el token en la URL
+    Query(query): Query<WsQuery>,
 ) -> Result<Response, StatusCode> {
-    
-    let secret_key = "vaca_mala_super_secreto"; // ¡La misma clave que en el login!
-
-    // Intentamos desencriptar y validar la firma
     let token_data = decode::<Claims>(
         &query.token,
-        &DecodingKey::from_secret(secret_key.as_ref()),
+        &DecodingKey::from_secret(state.jwt_secret.as_bytes()),
         &Validation::default(),
     );
 
     match token_data {
         Ok(data) => {
-            // ¡Token válido! Extraemos el nombre seguro del JWT
             let verified_username = data.claims.sub;
-            
-            // Le pasamos el nombre verificado al socket
             Ok(ws.on_upgrade(move |socket| socket_handle(socket, state, verified_username)))
         },
         Err(_) => {
-            // Token falso o expirado. ¡Acceso denegado!
-            println!("[SECURITY] Intento de conexión no autorizada al WebSocket.");
+            warn!("Intento de conexión no autorizada al WebSocket.");
             Err(StatusCode::UNAUTHORIZED)
         }
     }
 }
 
-// Ahora recibe el nombre verificado por el servidor
 async fn socket_handle(socket: WebSocket, state: AppState, verified_username: String) {
     let (mut sender, mut receiver) = socket.split();
 
-    // 1. Cargar Historial (esto queda igual)
-    match sqlx::query("SELECT name, msg, strftime('%H:%M', datetime(created_at, 'localtime')) as time FROM messages ORDER BY id DESC LIMIT 100")
+    // Calcular color deterministicamente del username 
+    let color_num = verified_username
+        .bytes()
+        .fold(0u32, |acc, b| acc + b as u32) % USER_COLOR_COUNT + 1;
+    let user_color = format!("user-color-{}", color_num);
+
+    // 1. Cargar historial
+    match sqlx::query(
+        "SELECT name, msg, color, strftime('%H:%M', datetime(created_at, 'localtime')) as time \
+         FROM messages ORDER BY id DESC LIMIT ?"
+    )
+        .bind(HISTORY_LIMIT)
         .fetch_all(&state.db)
         .await 
     {
@@ -78,13 +85,14 @@ async fn socket_handle(socket: WebSocket, state: AppState, verified_username: St
             for row in history.into_iter().rev() {
                 let name: String = row.get("name");
                 let msg: String = row.get("msg");
-                let time: String = row.try_get("time").unwrap_or_else(|_| "".to_string());
-                
-                let msg_json = json!({ "name": name, "msg": msg, "time": time });
+                let time: String = row.try_get("time").unwrap_or_default();
+                let color: String = row.try_get("color").unwrap_or_else(|_| "user-color-1".to_string());
+
+                let msg_json = json!({ "name": name, "msg": msg, "time": time, "color": color });
                 let _ = sender.send(Message::Text(msg_json.to_string().into())).await;
             }
         }
-        Err(e) => println!("Error al leer el historial: {}", e),
+        Err(e) => error!(error = %e, "Error al leer el historial"),
     }
 
     let mut rx = state.tx.subscribe();
@@ -94,32 +102,52 @@ async fn socket_handle(socket: WebSocket, state: AppState, verified_username: St
         tokio::select! {
             Some(Ok(msg)) = receiver.next() => {
                 if let Ok(msg_text) = msg.to_text() {
+
+                    // Limitar tamaño de mensajes
+                    if msg_text.len() > MAX_MESSAGE_LENGTH {
+                        continue;
+                    }
+
                     if let Ok(mut parsed) = serde_json::from_str::<serde_json::Value>(msg_text) {
-                        
-                        // IGNORAMOS el nombre que manda el cliente y FORZAMOS el nombre seguro
+                        // Forzar identidad y color server-side, ignorar lo que mande el cliente
                         parsed["name"] = json!(verified_username);
-                        
-                        // Guardamos en la base de datos con la identidad real
+                        parsed["color"] = json!(user_color);
+
+                        // Guardar en DB con identidad y color reales
                         if let Some(text) = parsed["msg"].as_str() {
-                            let _ = sqlx::query("INSERT INTO messages (name, msg) VALUES (?, ?)")
+                            let _ = sqlx::query(
+                                "INSERT INTO messages (name, msg, color) VALUES (?, ?, ?)"
+                            )
                                 .bind(&verified_username)
                                 .bind(text)
+                                .bind(&user_color)
                                 .execute(&state.db)
                                 .await;
                         }
-                        
-                        // Retransmitimos el JSON corregido y seguro a todos
+
                         let _ = state.tx.send(parsed.to_string());
                     }
                 }
-            }   
-            Ok(msg) = rx.recv() => {
-                if sender.send(Message::Text(msg.into())).await.is_err() { break; }
+            }
+            msg = rx.recv() => {
+                match msg {
+                    Ok(msg) => {
+                        if sender.send(Message::Text(msg.into())).await.is_err() {
+                            break;
+                        }
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
+                        warn!(username = %verified_username, skipped = n, "Receptor lageado");
+                    }
+                    Err(_) => break,
+                }
             }
             else => break,
         }
     }
 }
+
+// Types 
 #[derive(Deserialize)]
 pub struct AuthPayload {
     pub username: String,
@@ -130,34 +158,31 @@ pub struct AuthPayload {
 pub struct WsQuery {
     pub token: String,
 }
+
 #[derive(Serialize)]
 pub struct AuthResponse {
     pub message: String,
-    pub token: Option<String>, // Acá va a viajar el JWT
+    pub token: Option<String>,
 }
 
-// Estructura interna del Token (Los "Datos" de la pulsera)
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims {
-    sub: String, // El "sujeto" (quién es: mateo)
-    exp: usize,  // Cuándo expira (Timestamp)
+    sub: String,
+    exp: usize,
 }
 
-// --- ENDPOINT: REGISTRO ---
+// Auth 
 pub async fn register_handler(
     State(state): State<AppState>,
     Json(payload): Json<AuthPayload>,
 ) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, Json<AuthResponse>)> {
     let username_normalized = payload.username.trim().to_lowercase();
-    // 1. Hashear la contraseña (DEFAULT_COST es 12, un buen balance de seguridad/rendimiento)
-    let hashed_password = hash(&payload.password, DEFAULT_COST).map_err(|_| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(AuthResponse { message: "Error interno al cifrar la contraseña".into() , token:None})
-        )
-    })?;
 
-    // 2. Intentar guardar en la base de datos
+    let hashed_password = hash(&payload.password, DEFAULT_COST).map_err(|_| (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(AuthResponse { message: "Error interno al cifrar la contraseña".into(), token: None })
+    ))?;
+
     let result = sqlx::query("INSERT INTO users (username, password_hash) VALUES (?, ?)")
         .bind(&username_normalized)
         .bind(&hashed_password)
@@ -167,43 +192,37 @@ pub async fn register_handler(
     match result {
         Ok(_) => Ok((
             StatusCode::CREATED,
-            Json(AuthResponse { message: "Usuario creado con éxito".into(), token:None })
+            Json(AuthResponse { message: "Usuario creado con éxito".into(), token: None })
         )),
         Err(_) => Err((
-            // Si falla, lo más probable es que el username ya exista (violación de PRIMARY KEY)
             StatusCode::CONFLICT,
-            Json(AuthResponse { message: "El usuario ya existe".into(), token:None })
+            Json(AuthResponse { message: "El usuario ya existe".into(), token: None })
         )),
     }
 }
 
-// --- ENDPOINT: LOGIN ---
 pub async fn login_handler(
     State(state): State<AppState>,
     Json(payload): Json<AuthPayload>,
 ) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, Json<AuthResponse>)> {
-    
-    // 1. Normalizamos el usuario a minúsculas
     let username_normalized = payload.username.trim().to_lowercase();
 
     let user_row = sqlx::query("SELECT password_hash FROM users WHERE username = ?")
         .bind(&username_normalized)
         .fetch_optional(&state.db)
         .await
-        .map_err(|_| {
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(AuthResponse { message: "Error en DB".into(), token: None }))
-        })?;
+        .map_err(|_| (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(AuthResponse { message: "Error en DB".into(), token: None })
+        ))?;
 
     if let Some(row) = user_row {
         let stored_hash: String = row.get("password_hash");
         let is_valid = verify(&payload.password, &stored_hash).unwrap_or(false);
 
         if is_valid {
-            // --- MAGIA JWT: Creamos la pulsera ---
-            
-            // Expira en 24 horas
             let expiration = Utc::now()
-                .checked_add_signed(Duration::hours(24))
+                .checked_add_signed(Duration::hours(JWT_EXPIRATION_HOURS))
                 .expect("Timestamp válido")
                 .timestamp() as usize;
 
@@ -212,20 +231,17 @@ pub async fn login_handler(
                 exp: expiration,
             };
 
-            // Firmamos el token con una clave secreta (En producción, esto va en un archivo .env)
-            let secret_key = "vaca_mala_super_secreto"; // ¡Tu firma única!
-            
             let token = encode(
                 &Header::default(),
                 &claims,
-                &EncodingKey::from_secret(secret_key.as_ref())
+                &EncodingKey::from_secret(state.jwt_secret.as_bytes())
             ).unwrap();
 
             return Ok((
                 StatusCode::OK,
                 Json(AuthResponse { 
                     message: "Login exitoso".into(),
-                    token: Some(token) // Devolvemos el token al frontend!
+                    token: Some(token)
                 })
             ));
         }

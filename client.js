@@ -1,7 +1,6 @@
 const path = window.location.pathname;
 
 // LOGICA PAGINA LOGIN
-// LOGICA PAGINA LOGIN
 if (path === "/" || path === "/index.html") {
     const btnLogin = document.getElementById("btn-login");
     const btnRegister = document.getElementById("btn-register");
@@ -108,26 +107,18 @@ if (path === "/chat") {
 
 function iniciarChat(usuario) {
     const headerTitle = document.getElementById("welcome-msg");
-    if(headerTitle) headerTitle.innerText = `USER: ${usuario}`;
-
-    
-
-    let userColorClass = sessionStorage.getItem("user_color_class");
-    if (!userColorClass) {
-        const randomNum = Math.floor(Math.random() * 8) + 1;
-        userColorClass = `user-color-${randomNum}`;
-        sessionStorage.setItem("user_color_class", userColorClass);
-    }
+    if (headerTitle) headerTitle.innerText = `USER: ${usuario}`;
 
     const jwtToken = sessionStorage.getItem("jwt_token");
-
     if (!jwtToken) {
         window.location.href = "/";
         return;
     }
 
-    // Le pegamos el token a la URL del WebSocket
-    const socket = new WebSocket(`ws://localhost:3000/ws?token=${jwtToken}`);
+    // URL dinamica!!!
+    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const socket = new WebSocket(`${wsProtocol}//${window.location.host}/ws?token=${jwtToken}`);
+
     const msgInput = document.getElementById("msj");
     const btnEnviar = document.getElementById("btn-enviar");
     const chatList = document.getElementById("chat-messages");
@@ -135,39 +126,32 @@ function iniciarChat(usuario) {
     const enviarMensaje = () => {
         const txt = msgInput.value;
         if (!txt) return;
-
-        const message = { 
-            name: usuario, 
-            msg: txt,
-            color: userColorClass
-        };
-
-        socket.send(JSON.stringify(message));
+        // solo importa el msg, no el color o name
+        socket.send(JSON.stringify({ msg: txt }));
         msgInput.value = "";
     };
 
     btnEnviar.onclick = enviarMensaje;
 
     msgInput.addEventListener("keypress", (e) => {
-        // Si aprieta Enter Y NO está apretando Shift
         if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault(); // Evitamos que haga el salto de línea en la caja
+            e.preventDefault();
             enviarMensaje();
         }
-    });;
+    });
 
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
         const li = document.createElement("li");
         const timeString = data.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
+
         if (data.name === usuario) {
-            li.classList.add("own-message"); 
+            li.classList.add("own-message");
         }
-        // Usar parseMarkdown para procesar el contenido
+
         const messageContent = parseMarkdown(data.msg);
-        const colorClass = data.color || 'user-color-2';
-        li.innerHTML = `<span class="timestamp">[${timeString}]</span> <strong class="${colorClass}">${data.name}:</strong> <div class="md-content">${messageContent}</div>`;        
+        const colorClass = data.color || 'user-color-1';
+        li.innerHTML = `<span class="timestamp">[${timeString}]</span> <strong class="${colorClass}">${data.name}:</strong> <div class="md-content">${messageContent}</div>`;
         chatList.appendChild(li);
         chatList.scrollTop = chatList.scrollHeight;
     };
@@ -176,35 +160,34 @@ function iniciarChat(usuario) {
 let katexConfigured = false;
 
 function parseMarkdown(text) {
-    // Usar marked.js para parsear markdown
     if (typeof marked !== 'undefined') {
-        
-        // Conectar KaTeX (Matemáticas) solo la primera vez
         if (typeof markedKatex !== 'undefined' && !katexConfigured) {
-            // throwOnError: false evita que el chat se rompa si escribes mal una fórmula
             marked.use(markedKatex({ throwOnError: false }));
             katexConfigured = true;
         }
 
         const html = marked.parse(text, {
             breaks: true,
-            gfm: true // GitHub Flavored Markdown
+            gfm: true
         });
-        
-        // Resaltar sintaxis en bloques de código
+
+        // sanitizar el HTML antes de usarlo
+        const clean = typeof DOMPurify !== 'undefined'
+            ? DOMPurify.sanitize(html)
+            : html; // fallback si por alguna razón no cargo
+
         if (typeof hljs !== 'undefined') {
             const div = document.createElement('div');
-            div.innerHTML = html;
+            div.innerHTML = clean;
             div.querySelectorAll('pre code').forEach((block) => {
                 hljs.highlightElement(block);
             });
             return div.innerHTML;
         }
-        
-        return html;
+
+        return clean;
     }
-    
-    // Fallback de seguridad si marked.js no está disponible
+
     return escapeHtml(text)
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
